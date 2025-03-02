@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embedded Timer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Fredoka One', cursive;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(-135deg, rgb(60, 60, 60), #000000);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1em;
+            color: white;
+            text-align: center;
+        }
+
+        .contain {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2em;
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 2em;
+            padding: 4em 3em;
+            position: relative;
+            max-width: 90vw;
+        }
+
+        .timer {
+            font-size: 3em;
+            font-weight: bold;
+        }
+
+        .candle-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .candle {
+            width: 40px;
+            height: 100px;
+            background-color: #ffcc66;
+            border-radius: 5px;
+            transition: height 1s linear;
+        }
+
+        .flame {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            width: 20px;
+            height: 35px;
+            background: radial-gradient(ellipse at bottom, yellow, orange, red);
+            border-radius: 50% 50% 40% 40% / 80% 80% 20% 20%;
+            transform-origin: center bottom;
+            animation: flicker 0.2s infinite alternate ease-in-out;
+        }
+
+        @keyframes flicker {
+            0% { transform: translateX(-50%) scale(1.1); opacity: 0.9; }
+            100% { transform: translateX(-50%) scale(0.9); opacity: 1; }
+        }
+
+        .button-wrapper {
+            display: flex;
+            gap: 1em;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            font-size: 1.2em;
+            padding: 0.5em 1.5em;
+            border-radius: 0.5em;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s ease-in-out;
+        }
+
+        #start { background-color: rgb(139, 209, 35); }
+        #stop { background-color: rgb(246, 25, 25); }
+        #reset { background-color: rgb(24, 137, 242); }
+        #backHome { background-color: #f4b860; }
+
+    </style>
+</head>
+<body>
+    <div class="contain">
+        <h1 class="title">Melt ME! The Candle!</h1>
+        <div class="candle-container">
+            <div class="candle" id="candle">
+                <div class="flame" id="flame"></div>
+            </div>
+        </div>
+        <div class="timer" id="timer">00:00</div>
+        <div class="button-wrapper">
+            <button id="backHome">🏠 Back to Home</button>
+            <button id="start">Start</button>
+            <button id="stop">Stop</button>
+            <button id="reset">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const timerDisplay = document.getElementById("timer");
+            const candle = document.getElementById("candle");
+            const flame = document.getElementById("flame");
+
+            let timeLeft = parseInt(localStorage.getItem("selectedTaskTime")) * 60 || 1500;
+            const totalTime = timeLeft;
+            
+            let studySubject = localStorage.getItem("selectedTaskSubject");
+            if (!studySubject) {
+                studySubject = "Unknown";
+                localStorage.setItem("selectedTaskSubject", studySubject);
+            }
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.innerHTML = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+
+                let newHeight = Math.max((100 * (timeLeft / totalTime)), 5) + "px";
+                candle.style.height = newHeight;
+
+                if (timeLeft <= 0) {
+                    flame.style.display = "none";
+                } else {
+                    flame.style.display = "block";
+                }
+            }
+
+            updateTimerDisplay();
+            let timerInterval;
+            let elapsedSeconds = 0;
+
+            document.getElementById("start").addEventListener("click", () => {
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        elapsedSeconds++;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        flame.style.display = "none";
+                        saveStudyTime(studySubject, elapsedSeconds);
+                    }
+                }, 1000);
+            });
+
+            document.getElementById("stop").addEventListener("click", () => {
+                clearInterval(timerInterval);
+                saveStudyTime(studySubject, elapsedSeconds);
+            });
+
+            document.getElementById("reset").addEventListener("click", () => {
+                timeLeft = totalTime;
+                elapsedSeconds = 0;
+                updateTimerDisplay();
+                flame.style.display = "block";
+            });
+
+            document.getElementById("backHome").addEventListener("click", () => {
+                window.location.href = "home.html";
+            });
+
+            function saveStudyTime(subject, seconds) {
+                let studyData = JSON.parse(localStorage.getItem("studyData")) || {};
+                studyData[subject] = (studyData[subject] || 0) + seconds;
+                localStorage.setItem("studyData", JSON.stringify(studyData));
+            }
+        });
+    </script>
+</body>
+</html>
